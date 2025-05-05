@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id         Int          @id @default(autoincrement())
+  name       String
+  stock      Int
+  price      Decimal
+  orderItems OrderItem[]
+  logs       InventoryLog[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+}
+
+model Order {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  total          Decimal
+  status         String           @default("pending")
+  createdAt      DateTime         @default(now())
+  items          OrderItem[]
+  steps          FulfillmentStep[] // Thêm quan hệ với FulfillmentStep
+  trackingNumber String?           // Thêm trường để lưu mã vận đơn
+}
+
+model InventoryLog {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  quantity  Int
+  action    String   // "adjust" hoặc "restore"
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model FulfillmentStep {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
+  step      String   // "picking", "packing", "shipping"
+  details   String?
+  createdAt DateTime @default(now())
+}
